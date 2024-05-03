@@ -57,7 +57,7 @@ class AdapterModel(BaseModel):
                 low_cpu_mem_usage=True, 
                 max_memory=max_memory,
                 device_map=device_map,
-                torch_dtype=torch_dtype,
+                torch_dtype=torch.float16 if torch_dtype == torch.float64 else torch_dtype,
                 trust_remote_code=config.trust_remote_code,
                 cache_dir=env_config.cache_dir,
                 quantization_config=config.quantization_config,
