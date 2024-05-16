@@ -602,7 +602,14 @@ class BaseModel(LightevalModel):
             return_dict_in_generate=True,
             output_scores=True,
             eos_token_id=self.tokenizer.eos_token_id,
-            do_sample=num_samples > 1,
+            #do_sample=num_samples > 1,
+            do_sample=True,
+            early_stopping=True,
+            temperature=0.8, 
+            repetition_penalty=1.1,
+            top_k=40, 
+            top_p=0.9,
+            num_beams=5,
             num_return_sequences=num_samples,
         )
         if returns_logits:
