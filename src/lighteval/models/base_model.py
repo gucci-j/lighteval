@@ -545,7 +545,7 @@ class BaseModel(LightevalModel):
                 tokenized = self.tokenizer(
                     context,
                     truncation="longest_first",  # we truncate to the model max length if needed
-                    padding="max_length",  # we pad to the longest sequence
+                    padding="max_length" if len(batch) > 1 else "do_not_pad",  # we pad to the longest sequence
                     return_tensors="pt",
                     max_length=max_context_continuation_size_allowed,  # we always allow minimum one token of generation
                     add_special_tokens=self.add_special_tokens,
@@ -619,8 +619,8 @@ class BaseModel(LightevalModel):
             return_dict_in_generate=True,
             output_scores=True,
             eos_token_id=self.tokenizer.eos_token_id,
-            do_sample=num_samples > 1,
             num_return_sequences=num_samples,
+            do_sample=num_samples > 1,
         )
         if returns_logits:
             logits = self.model.compute_transition_scores(outputs.sequences, outputs.scores, normalize_logits=True)
