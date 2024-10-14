@@ -258,6 +258,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
         sentence_space=" ",
         colon=":",
     ),
+    Language.BURMESE: TranslationLiterals(
+        language=Language.BURMESE,
+        question_word="မေးခွန်း",  # "question"
+        answer="အဖြေ",  # "answer"
+        confirmation_word="မှန်တယ်",  # "right" (more like "correct" in Burmese)
+        yes="ဟုတ်တယ်",  # "yes"
+        no="မဟုတ်ဘူး",  # "no"
+        also="လည်း",  # "also"
+        cause_word="အကြောင်း",  # "because"
+        effect_word="ဒါကြောင့်",  # "therefore"
+        true="မှန်တယ်",  # "true"
+        false="မှားတယ်",  # "false"
+        neither="မဟုတ်ပါ",  # "neither"
+        full_stop="။",  # Full stop
+        comma="၊",  # Comma
+        question_mark="?",  # Question mark
+        exclamation_mark="!",  # Exclamation mark
+        word_space=" ",  # Space between words
+        sentence_space=" ",  # Space between sentences
+        colon=":",  # Colon
+        or_word="သို့မဟုတ်",  # "or"
+    ),
     Language.SPANISH: TranslationLiterals(language=Language.SPANISH),
     Language.PORTUGUESE: TranslationLiterals(language=Language.PORTUGUESE),
     Language.ITALIAN: TranslationLiterals(language=Language.ITALIAN),
@@ -314,7 +336,6 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
     Language.NEPALI: TranslationLiterals(language=Language.NEPALI),
     Language.KAZAKH: TranslationLiterals(language=Language.KAZAKH),
     Language.BELARUSIAN: TranslationLiterals(language=Language.BELARUSIAN),
-    Language.BURMESE: TranslationLiterals(language=Language.BURMESE),
     Language.ESPERANTO: TranslationLiterals(language=Language.ESPERANTO),
     Language.UZBEK: TranslationLiterals(language=Language.UZBEK),
     Language.KHMER: TranslationLiterals(language=Language.KHMER),
