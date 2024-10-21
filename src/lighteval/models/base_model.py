@@ -22,6 +22,7 @@
 
 import os
 from typing import Optional, Tuple, Union
+import time
 
 import torch
 import torch.nn.functional as F
@@ -610,6 +611,7 @@ class BaseModel(LightevalModel):
         batch_size, _ = batch.input_ids.shape
 
         # Compute model generation
+        start_time = time.time()
         outputs = self.model.generate(
             input_ids=batch.input_ids,
             attention_mask=batch.input_mask,
@@ -619,9 +621,18 @@ class BaseModel(LightevalModel):
             return_dict_in_generate=True,
             output_scores=True,
             eos_token_id=self.tokenizer.eos_token_id,
-            num_return_sequences=num_samples,
-            do_sample=num_samples > 1,
+            num_return_sequences=1,
+            # modified and added based on https://arxiv.org/pdf/2406.11477 & https://huggingface.co/docs/transformers/v4.45.2/en/internal/generation_utils
+            do_sample=True,
+            num_beams=5,
+            temperature=0.8, # control the randomness of the predicted tokens
+            repetition_penalty=1.1, # prevents the repetition of previous tokens through a penalty
+            top_k=40, # The number of highest probability vocabulary tokens to keep for top-k-filtering
+            top_p=0.9, # If set to < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation
+            early_stopping=True,
         )
+        end_time = time.time()
+        elapsed_time = end_time - start_time
         if returns_logits:
             logits = self.model.compute_transition_scores(outputs.sequences, outputs.scores, normalize_logits=True)
         generations = outputs.sequences[:, batch.input_ids.size(1) :]
@@ -667,6 +678,7 @@ class BaseModel(LightevalModel):
             cur_response = GenerativeResponse(
                 result=decoded_generations,
                 logits=logits[ix][: len_logits[ix]] if returns_logits else None,
+                response_time=elapsed_time,
                 generated_tokens=result_generations,
                 input_tokens=batched_input[: len_ids[ix]],
                 truncated_tokens_count=trunc.cpu().item(),

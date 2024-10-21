@@ -61,6 +61,7 @@ class LoglikelihoodSingleTokenResponse(ModelResponse):
 class GenerativeResponse(ModelResponse):
     result: str = field(default_factory=str)  # generated text continuation
     logits: Optional[list[float]] = None  # Generated text logits
+    response_time: Optional[float] = 0.0 
 
     def get_result_for_eval(self):
         return self.result if self.logits is None else (self.result, self.logits)
