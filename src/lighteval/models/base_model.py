@@ -772,7 +772,10 @@ class BaseModel(LightevalModel):
                     max_context=max_context_continuation_size_allowed,
                 )
 
+                start_time = time.time()
                 model_output = self._model_call(prepared_batch.input_ids)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
                 logits = F.log_softmax(model_output, dim=-1)  # [batch, padding_length, vocab]
 
                 logits_sum = []
@@ -838,6 +841,7 @@ class BaseModel(LightevalModel):
                         generated_tokens=cont_tokens[: len_tokens[ix]].cpu().tolist(),
                         truncated_tokens_count=trunc.cpu().item(),
                         padded_tokens_count=padded.cpu().item(),
+                        response_time=elapsed_time,
                     )
                     res.append(answer)
 
