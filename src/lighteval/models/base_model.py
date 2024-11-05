@@ -81,6 +81,7 @@ class BaseModel(LightevalModel):
         self._tokenizer = self._create_auto_tokenizer(config, env_config)
 
         # If model_parallel is not set we compare the number of processes with the number of GPUs
+        hlog(f"Checking model parallel: {config.model_parallel}")
         self.model = self._create_auto_model(config, env_config)
         self.model.eval()
         torch.set_grad_enabled(False)
@@ -134,9 +135,11 @@ class BaseModel(LightevalModel):
 
         self.num_local_processes = int(os.environ.get("LOCAL_WORLD_SIZE", 1))
         self.num_machines = int(os.environ.get("WORLD_SIZE", 0)) // self.num_local_processes
-        if self.num_machines == 0:
-            hlog("We are not in a distributed setting. Setting model_parallel to False.")
-            model_parallel = False
+
+        # NOTE: This causes issues with a single node setting. Temporarily disabled.
+        #if self.num_machines == 0:
+        #    hlog("We are not in a distributed setting. Setting model_parallel to False.")
+        #    model_parallel = False
 
         if model_parallel is None:
             max_memory_all_gpus = get_max_memory()  # A dict of the max memory for all the gpus
