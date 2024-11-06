@@ -30,7 +30,8 @@ torch_version = torch.__version__
 if version.parse(torch_version) >= version.parse("2.5.0"):
     from torch.utils.data.distributed import DistributedSampler, _T_co
 else:
-    from torch.utils.data.distributed import DistributedSampler, T_co
+    from torch.utils.data.distributed import DistributedSampler
+    from torch.utils.data.distributed import T_co as _T_co
 
 from lighteval.logging.hierarchical_logger import hlog_warn
 from lighteval.tasks.requests import (
