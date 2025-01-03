@@ -25,6 +25,7 @@ import os
 import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
+import time
 
 import torch
 import torch.nn.functional as F
@@ -263,6 +264,7 @@ class TransformersModel(LightevalModel):
         self._tokenizer = self._create_auto_tokenizer(config, env_config)
 
         # If model_parallel is not set we compare the number of processes with the number of GPUs
+        logger.info(f"Checking model parallel: {config.model_parallel}")
         self.model = self._create_auto_model(config, env_config)
         self.model.eval()
         torch.set_grad_enabled(False)
@@ -848,7 +850,7 @@ class TransformersModel(LightevalModel):
                 tokenized = self.tokenizer(
                     context,
                     truncation="longest_first",  # we truncate to the model max length if needed
-                    padding="max_length",  # we pad to the longest sequence
+                    padding="max_length" if len(batch) > 1 else "do_not_pad",  # we pad to the longest sequence
                     return_tensors="pt",
                     max_length=max_context_continuation_size_allowed,  # we always allow minimum one token of generation
                     add_special_tokens=self.add_special_tokens,
@@ -919,19 +921,29 @@ class TransformersModel(LightevalModel):
             max_new_tokens=max_new_tokens,
             pad_token_id=self.tokenizer.pad_token_id if self.tokenizer.pad_token_id else self.tokenizer.eos_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            do_sample=do_sample,
-            num_return_sequences=num_samples,
+            num_return_sequences=1,
             output_logits=returns_logits,
             renormalize_logits=True,
+            # modified and added based on https://arxiv.org/pdf/2406.11477 & https://huggingface.co/docs/transformers/v4.45.2/en/internal/generation_utils
+            do_sample=True,
+            num_beams=5,
+            temperature=0.8, # control the randomness of the predicted tokens
+            repetition_penalty=1.1, # prevents the repetition of previous tokens through a penalty
+            top_k=40, # The number of highest probability vocabulary tokens to keep for top-k-filtering
+            top_p=0.9, # If set to < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation
+            early_stopping=True,
         )
 
         # Compute model generation
+        start_time = time.time()
         outputs: GenerateOutput = self.model.generate(
             input_ids=batch.input_ids,
             attention_mask=batch.input_mask,
             stopping_criteria=stopping_criteria,
             **generation_config,
         )
+        end_time = time.time()
+        elapsed_time = end_time - start_time
         generations = outputs.sequences[:, batch.input_ids.size(1) :]
         generations = torch.reshape(generations, (batch_size, num_samples, -1))
         generations, len_gens = self.pad_and_gather(generations, num_samples=num_samples)
@@ -971,6 +983,7 @@ class TransformersModel(LightevalModel):
             cur_response = GenerativeResponse(
                 result=decoded_generations,
                 logits=logits[ix][: len_logits[ix]] if returns_logits else None,
+                response_time=elapsed_time,
                 generated_tokens=result_generations,
                 input_tokens=batched_input[: len_ids[ix]],
                 truncated_tokens_count=trunc.cpu().item(),
@@ -1064,7 +1077,10 @@ class TransformersModel(LightevalModel):
                     max_context=max_context_continuation_size_allowed,
                 )
 
+                start_time = time.time()
                 model_output = self._model_call(prepared_batch.input_ids)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
                 logits = F.log_softmax(model_output, dim=-1)  # [batch, padding_length, vocab]
 
                 logits_sum = []
@@ -1130,6 +1146,7 @@ class TransformersModel(LightevalModel):
                         generated_tokens=cont_tokens[: len_tokens[ix]].cpu().tolist(),
                         truncated_tokens_count=trunc.cpu().item(),
                         padded_tokens_count=padded.cpu().item(),
+                        response_time=elapsed_time,
                     )
                     res.append(answer)
 

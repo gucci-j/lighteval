@@ -211,6 +211,7 @@ class DetailsLogger:
         gold_index: list = field(default_factory=list)
         metrics: dict = field(default_factory=dict)
         specifics: dict = field(default_factory=dict)
+        response_times: list = field(default_factory=list)
 
     @dataclass
     class CompiledDetail:
@@ -351,6 +352,7 @@ class DetailsLogger:
         detail.padded = [o.padded_tokens_count for o in outputs]
         detail.num_effective_few_shots = doc.num_effective_few_shots
         detail.num_asked_few_shots = doc.num_asked_few_shots
+        detail.response_times = [o.response_time for o in outputs]
 
         pred_saved = False
         if (
