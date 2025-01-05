@@ -123,6 +123,15 @@ class Language(Enum):
     SHAN = "shn"
     UDMURT = "udm"
     ZULU = "zul"
+    CHHATTISGARHI = "hne"
+    MAGAHI = "mag"
+    MANIPURI = "mni"
+    BAMBARA = "bam"
+    BALINESE = "ban"
+    BHOJPURI = "bho"
+    CRIMEAN_TATAR = "crh"
+    KASHMIRI = "kas"
+    LATGALIAN = "lat"
 
 
 # This mapping was created for beleble, it converts iso_639_3 individual codes to iso_639_3 macro codes
@@ -181,7 +190,7 @@ iso_639_3_ind_to_iso_639_3_macro = {
     "ukr": Language.UKRAINIAN,
     "zho": Language.CHINESE,
     "amh": Language.AMHARIC,
-    #  'bam': Language.BAMBARA,
+    'bam': Language.BAMBARA,
     "dan": Language.DANISH,
     #  'gaz': Language.OROMO,
     "hun": Language.HUNGARIAN,
@@ -257,5 +266,13 @@ iso_639_3_ind_to_iso_639_3_macro = {
     "slk": Language.SLOVAK,
     #  'sun': Language.SUNDANESE,
     #  'tsn': Language.TSWANA,
-    #  'wol': Language.WOLOF
+    #  'wol': Language.WOLOF,
+    "hne": Language.CHHATTISGARHI,
+    "mag": Language.MAGAHI,
+    "mni": Language.MANIPURI,
+    "ban": Language.BALINESE,
+    "bho": Language.BHOJPURI,
+    "crh": Language.CRIMEAN_TATAR,
+    "kas": Language.KASHMIRI,
+    "ltg": Language.LATGALIAN,
 }
