@@ -132,6 +132,18 @@ class Language(Enum):
     CRIMEAN_TATAR = "crh"
     KASHMIRI = "kas"
     LATGALIAN = "lat"
+    FRIULIAN = "fur"
+    LIGURIAN = "lij"
+    DARI = "prs"
+    SOUTHERN_PASHTO = "pbt"
+    SARDINIAN = "srd"
+    MOROCCAN_ARABIC = "ary"
+    EGYPTIAN_ARABIC = "arz"
+    DZONGKHA = "dzo"
+    GUARANI = "grn"
+    MAORI = "mri"
+    SICILIAN = "scn"
+    SILESIAN = "szl"
 
 
 # This mapping was created for beleble, it converts iso_639_3 individual codes to iso_639_3 macro codes
@@ -151,7 +163,7 @@ class Language(Enum):
 
 iso_639_3_ind_to_iso_639_3_macro = {
     "acm": Language.ARABIC,
-    "arz": Language.ARABIC,
+    "arz": Language.EGYPTIAN_ARABIC,
     "ceb": Language.CEBUANO,
     "fin": Language.FINNISH,
     "hin": Language.HINDI,
@@ -205,7 +217,7 @@ iso_639_3_ind_to_iso_639_3_macro = {
     "apc": Language.ARABIC,
     "ben": Language.BENGALI,
     "deu": Language.GERMAN,
-    #  'grn': Language.GUARANI,
+    'grn': Language.GUARANI,
     "hye": Language.ARMENIAN,
     "kan": Language.KANNADA,
     "lao": Language.LAO,
@@ -221,7 +233,7 @@ iso_639_3_ind_to_iso_639_3_macro = {
     #  'ibo': Language.IGBO,
     "kat": Language.GEORGIAN,
     #  'lin': Language.LINGALA,
-    #  'mri': Language.MAORI,
+    'mri': Language.MAORI,
     "pan": Language.PUNJABI,
     "shn": Language.SHAN,
     "spa": Language.SPANISH,
@@ -253,7 +265,7 @@ iso_639_3_ind_to_iso_639_3_macro = {
     #  'ssw': Language.SWATI,
     #  'tir': Language.TIGRINYA,
     "war": Language.WAR,
-    "ary": Language.ARABIC,
+    "ary": Language.MOROCCAN_ARABIC,
     "cat": Language.CATALAN,
     "eus": Language.BASQUE,
     "que": Language.QUECHUA,
@@ -275,4 +287,12 @@ iso_639_3_ind_to_iso_639_3_macro = {
     "crh": Language.CRIMEAN_TATAR,
     "kas": Language.KASHMIRI,
     "ltg": Language.LATGALIAN,
+    "fur": Language.FRIULIAN,
+    "lij": Language.LIGURIAN,
+    "prs": Language.DARI,
+    "srd": Language.SARDINIAN,
+    "pbt": Language.SOUTHERN_PASHTO,
+    "dzo": Language.DZONGKHA,
+    "scn": Language.SICILIAN,
+    "szl": Language.SILESIAN,
 }
