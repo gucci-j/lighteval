@@ -39,7 +39,7 @@ class Language(Enum):
     JAPANESE = "jpn"
     VIETNAMESE = "vie"
     INDONESIAN = "ind"
-    PERSIAN = "fas"
+    PERSIAN = "pes"
     KOREAN = "kor"
     ARABIC = "ara"
     THAI = "tha"
