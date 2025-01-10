@@ -144,6 +144,10 @@ class Language(Enum):
     MAORI = "mri"
     SICILIAN = "scn"
     SILESIAN = "szl"
+    ACEHNESE = "ace"
+    BANJAR = "bjn"
+    LATGALIAN = "ltg"
+    TAMAZIGHT = "zgh"
 
 
 # This mapping was created for beleble, it converts iso_639_3 individual codes to iso_639_3 macro codes
@@ -295,4 +299,7 @@ iso_639_3_ind_to_iso_639_3_macro = {
     "dzo": Language.DZONGKHA,
     "scn": Language.SICILIAN,
     "szl": Language.SILESIAN,
+    "ace": Language.ACEHNESE,
+    "bjn": Language.BANJAR,
+    "zgh": Language.TAMAZIGHT,
 }
