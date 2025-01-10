@@ -131,7 +131,6 @@ class Language(Enum):
     BHOJPURI = "bho"
     CRIMEAN_TATAR = "crh"
     KASHMIRI = "kas"
-    LATGALIAN = "lat"
     FRIULIAN = "fur"
     LIGURIAN = "lij"
     DARI = "prs"
