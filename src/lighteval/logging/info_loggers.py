@@ -349,7 +349,6 @@ class DetailsLogger:
         detail.padded = [o.padded_tokens_count for o in outputs]
         detail.num_effective_few_shots = doc.num_effective_few_shots
         detail.num_asked_few_shots = doc.num_asked_few_shots
-        detail.response_times = [o.response_time for o in outputs]
 
         pred_saved = False
         if (
@@ -363,14 +362,17 @@ class DetailsLogger:
             or task.has_metric_category[MetricCategory.GENERATIVE_SAMPLING]
         ):
             detail.gold = doc.get_golds()
+            detail.response_times = [o.response_time for o in outputs]
             pred_saved = True
         if task.has_metric_category[MetricCategory.GENERATIVE_LOGPROB]:
             detail.gold = doc.get_golds()
             detail.pred_logits = [o.logits for o in outputs]
+            detail.response_times = [o.response_time for o in outputs]
             pred_saved = True
         if task.has_metric_category[MetricCategory.MULTICHOICE]:
             detail.choices = doc.choices
             detail.gold_index = as_list(doc.gold_index)
+            detail.response_times = [o.response_time for o in outputs]
             pred_saved = True
         if task.has_metric_category[MetricCategory.MULTICHOICE_ONE_TOKEN]:
             detail.choices = doc.choices

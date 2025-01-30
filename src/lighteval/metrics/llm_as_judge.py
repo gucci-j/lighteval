@@ -126,7 +126,10 @@ class JudgeLM:
                         "text-generation",
                         model=transformers_model,
                         tokenizer=tokenizer,
-                        max_new_tokens=256,
+                        max_new_tokens=512,
+                        do_sample=True,
+                        temperature=0.8, 
+                        top_p=0.95,
                     )
                 return self.__call_transformers
             case _:
