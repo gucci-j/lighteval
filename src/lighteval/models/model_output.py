@@ -43,6 +43,7 @@ class LoglikelihoodResponse(ModelResponse):
     # Float: Total log prob of the continuation
     # Optional(Bool): Whether the continuation is greedy (= all the tokens in the continuation are argmax of prob)
     result: Union[tuple[float, bool], float] = field(default_factory=tuple[float, bool])
+    response_time: Optional[float] = 0.0 
 
     def get_result_for_eval(self):
         return self.result
@@ -52,6 +53,7 @@ class LoglikelihoodResponse(ModelResponse):
 class LoglikelihoodSingleTokenResponse(ModelResponse):
     # Log probs of the various single token options
     result: list[float] = field(default_factory=list)
+    response_time: Optional[float] = 0.0 
 
     def get_result_for_eval(self):
         return self.result
@@ -61,6 +63,7 @@ class LoglikelihoodSingleTokenResponse(ModelResponse):
 class GenerativeResponse(ModelResponse):
     result: list[str] = field(default_factory=str)  # generated text continuation
     logits: Optional[list[float]] = None  # Generated text logits
+    response_time: Optional[float] = 0.0 
 
     def get_result_for_eval(self):
         return self.result
