@@ -23,6 +23,7 @@
 import logging
 import os
 from typing import Optional, Tuple, Union
+import time
 
 import torch
 import torch.nn.functional as F
@@ -530,6 +531,7 @@ class TransformersModel(LightevalModel):
         starting_batch_size = STARTING_BATCH_SIZE
         results = []
 
+
         for split in tqdm(
             dataset.splits_iterator(),
             total=dataset.num_dataset_splits,
@@ -582,7 +584,7 @@ class TransformersModel(LightevalModel):
                 tokenized = self.tokenizer(
                     context,
                     truncation="longest_first",  # we truncate to the model max length if needed
-                    padding="longest",  # we pad to the longest sequence
+                    padding="longest" if len(batch) > 1 else "do_not_pad",  # we pad to the longest sequence
                     return_tensors="pt",
                     max_length=max_context_continuation_size_allowed,  # we always allow minimum one token of generation
                     add_special_tokens=self.add_special_tokens,
@@ -650,21 +652,31 @@ class TransformersModel(LightevalModel):
             max_new_tokens=max_new_tokens,
             pad_token_id=self.tokenizer.pad_token_id if self.tokenizer.pad_token_id else self.tokenizer.eos_token_id,
             eos_token_id=self.tokenizer.eos_token_id,
-            do_sample=do_sample,
             num_return_sequences=num_samples,
             output_logits=returns_logits,
             renormalize_logits=True,
+            # modified and added based on https://arxiv.org/pdf/2406.11477 & https://huggingface.co/docs/transformers/v4.45.2/en/internal/generation_utils
+            do_sample=True,
+            num_beams=5,
+            temperature=0.8, # control the randomness of the predicted tokens
+            repetition_penalty=1.1, # prevents the repetition of previous tokens through a penalty
+            top_k=40, # The number of highest probability vocabulary tokens to keep for top-k-filtering
+            top_p=0.9, # If set to < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation
+            early_stopping=True,
         )
         if num_samples > 1 and generation_config["temperature"] == 0:
             logger.warning("num_samples > 1 but temperature is set to 0, this will not sample different outputs.")
 
         # Compute model generation
+        start_time = time.time()
         outputs: GenerateOutput = self.model.generate(
             input_ids=batch.input_ids,
             attention_mask=batch.input_mask,
             stopping_criteria=stopping_criteria,
             **generation_config,
         )
+        end_time = time.time()
+        elapsed_time = end_time - start_time
         generations = outputs.sequences[:, batch.input_ids.size(1) :]
         generations = torch.reshape(generations, (batch_size, num_samples, -1))
         generations, len_gens = self.pad_and_gather(generations, num_samples=num_samples)
@@ -708,6 +720,7 @@ class TransformersModel(LightevalModel):
                 input_tokens=batched_input[: len_ids[ix]],
                 truncated_tokens_count=trunc.cpu().item(),
                 padded_tokens_count=padded.cpu().item(),
+                response_time=elapsed_time,
             )
             all_responses.append(cur_response)
 
@@ -790,8 +803,10 @@ class TransformersModel(LightevalModel):
                     padding_length=max_input_length,
                     max_context=max_input_length,
                 )
-
+                start_time = time.time()
                 model_output = self._model_call(prepared_batch.input_ids)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
                 logits = F.log_softmax(model_output, dim=-1)  # [batch, padding_length, vocab]
 
                 logits_sum = []
@@ -871,6 +886,7 @@ class TransformersModel(LightevalModel):
                         generated_tokens=generated_tokens,
                         truncated_tokens_count=trunc.cpu().item(),
                         padded_tokens_count=padded.cpu().item(),
+                        response_time=elapsed_time,
                     )
                     res.append(answer)
 

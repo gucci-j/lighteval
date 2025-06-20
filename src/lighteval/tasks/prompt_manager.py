@@ -162,7 +162,8 @@ class PromptManager:
         offset = 2 if system_prompt is not None else 1
         for i in range(0, len(role_content_list), offset + 1):
             c = self.model.tokenizer.apply_chat_template(
-                role_content_list[: i + offset], add_generation_prompt=True, tokenize=False, add_special_tokens=False
+                role_content_list[: i + offset], add_generation_prompt=True, tokenize=False, add_special_tokens=False,
+                enable_thinking=False
             )
             contexts.append(c)
 
@@ -250,7 +251,7 @@ class PromptManager:
 
         elif use_chat_template:
             return self.model.tokenizer.apply_chat_template(
-                output, tokenize=False, add_generation_prompt=True
+                output, tokenize=False, add_generation_prompt=True, enable_thinking=False
             ), num_effective_fewshots
 
         return output, num_effective_fewshots
