@@ -79,7 +79,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
     Language.AFRIKAANS: TranslationLiterals(language=Language.AFRIKAANS),
     Language.AKAN: TranslationLiterals(language=Language.AKAN),
     Language.ALBANIAN: TranslationLiterals(language=Language.ALBANIAN),
-    Language.AMHARIC: TranslationLiterals(language=Language.AMHARIC),
+    Language.AMHARIC: TranslationLiterals(
+        language=Language.AMHARIC,
+        question_word="ጥያቄ",
+        answer="መልስ",
+        confirmation_word="ትክክል",
+        yes="እወ",
+        no="አይ",
+        also="እንዲሁም",
+        cause_word="ምክንያት",
+        effect_word="ስለዚህ",
+        true="እውነት",
+        false="ሐሰት",
+        neither="ምንም",
+        full_stop=".",
+        comma=",",
+        question_mark="?",
+        exclamation_mark="!",
+        word_space=" ",
+        sentence_space=" ",
+        colon=":",
+        or_word="ወይም",
+    ),
     Language.ARABIC: TranslationLiterals(
         language=Language.ARABIC,
         question_word="سؤال",
@@ -183,7 +204,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
         indices=["А", "Б", "В", "Г", "Д", "Е"],
     ),
     Language.BEMBA: TranslationLiterals(language=Language.BEMBA),
-    Language.BENGALI: TranslationLiterals(language=Language.BENGALI, question_word="প্রশ্ন"),
+    Language.BENGALI: TranslationLiterals(
+        language=Language.BENGALI, 
+        question_word="প্রশ্ন",
+        answer="উত্তর",
+        confirmation_word="ঠিক",
+        yes="হ্যাঁ",
+        no="না",
+        also="এছাড়াও",
+        cause_word="কারণ",
+        effect_word="তাই",
+        true="সত্য",
+        false="মিথ্যা",
+        neither="কোনোটিই নয়",
+        full_stop="।",
+        comma=",",
+        question_mark="?",
+        exclamation_mark="!",
+        word_space=" ",
+        sentence_space=" ",
+        colon=":",
+        or_word="অথবা",
+    ),
     Language.BHOJPURI: TranslationLiterals(language=Language.BHOJPURI),
     Language.BIHARI: TranslationLiterals(language=Language.BIHARI),  # Deprecated
     Language.BOSNIAN: TranslationLiterals(language=Language.BOSNIAN),
@@ -212,7 +254,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
         colon=":",
         indices=["А", "Б", "В", "Г", "Д", "Е"],
     ),
-    Language.BURMESE: TranslationLiterals(language=Language.BURMESE),
+    Language.BURMESE: TranslationLiterals(
+        language=Language.BURMESE,
+        question_word="မေးခွန်း",  # "question"
+        answer="အဖြေ",  # "answer"
+        confirmation_word="မှန်တယ်",  # "right" (more like "correct" in Burmese)
+        yes="ဟုတ်တယ်",  # "yes"
+        no="မဟုတ်ဘူး",  # "no"
+        also="လည်း",  # "also"
+        cause_word="အကြောင်း",  # "because"
+        effect_word="ဒါကြောင့်",  # "therefore"
+        true="မှန်တယ်",  # "true"
+        false="မှားတယ်",  # "false"
+        neither="မဟုတ်ပါ",  # "neither"
+        full_stop="။",  # Full stop
+        comma="၊",  # Comma
+        question_mark="?",  # Question mark
+        exclamation_mark="!",  # Exclamation mark
+        word_space=" ",  # Space between words
+        sentence_space=" ",  # Space between sentences
+        colon=":",  # Colon
+        or_word="သို့မဟုတ်",  # "or"
+    ),
     Language.CATALAN: TranslationLiterals(
         language=Language.CATALAN,
         question_word="pregunta",
@@ -498,7 +561,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
         semicolon="·",
     ),
     Language.GUARANI: TranslationLiterals(language=Language.GUARANI),
-    Language.GUJARATI: TranslationLiterals(language=Language.GUJARATI),
+    Language.GUJARATI: TranslationLiterals(
+        language=Language.GUJARATI,
+        question_word="પ્રશ્ન",
+        answer="જવાબ",
+        confirmation_word="ઠીક",
+        yes="હા",
+        no="નહીં",
+        also="પણ સાથે",
+        cause_word="કારણ કે",
+        effect_word="તેથી",
+        true="સાચું",
+        false="ખોટું",
+        neither="દુઈ માંથી એક પણ નથી",
+        full_stop=".",
+        comma=",",
+        question_mark="?",
+        exclamation_mark="!",
+        word_space=" ",
+        sentence_space=" ",
+        colon=":",
+        or_word="અથવા",
+    ),
     Language.HAITIAN: TranslationLiterals(
         # From https://github.com/EleutherAI/lm-evaluation-harness/blob/0845b588303f1f59af98dd1c5bdbd78a9e75a1e2/lm_eval/tasks/xcopa/utils.py
         language=Language.HAITIAN,
@@ -895,7 +979,28 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
     Language.SICILIAN: TranslationLiterals(language=Language.SICILIAN),
     Language.SILESIAN: TranslationLiterals(language=Language.SILESIAN),
     Language.SINDHI: TranslationLiterals(language=Language.SINDHI),
-    Language.SINHALA: TranslationLiterals(language=Language.SINHALA),
+    Language.SINHALA: TranslationLiterals(
+        language=Language.SINHALA,
+        question_word="ප්‍රශ්නය",
+        answer="පිළිතුර",
+        confirmation_word="සැබෑ",
+        yes="ඔව්",
+        no="නැහැ",
+        also="ද",
+        cause_word="කාරණය",
+        effect_word="එබැවින්",
+        true="සැබෑ",
+        false="අසත්‍ය",
+        neither="කිසිවක්ම",
+        full_stop=".",
+        comma=",",
+        question_mark="?",
+        exclamation_mark="!",
+        word_space=" ",
+        sentence_space=" ",
+        colon=":",
+        or_word="හෝ",
+    ),
     Language.SLOVAK: TranslationLiterals(
         language=Language.SLOVAK,
         question_word="otázka",
@@ -1008,6 +1113,22 @@ TRANSLATION_LITERALS: dict[Language, TranslationLiterals] = {
         language=Language.TAMIL,
         cause_word="காரணமாக",
         effect_word="எனவே",
+        answer="பதில்",
+        confirmation_word="சரி",
+        yes="ஆம்",
+        no="இல்லை",
+        also="மேலும்",
+        true="உண்மை",
+        false="பொய்யான",
+        neither="இருப்பதில்லை",
+        full_stop=".",
+        comma=",",
+        question_mark="?",
+        exclamation_mark="!",
+        word_space=" ",
+        sentence_space=" ",
+        colon=":",
+        or_word="அல்லது",
     ),
     Language.TATAR: TranslationLiterals(
         language=Language.TATAR,
