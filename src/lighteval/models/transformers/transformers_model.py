@@ -51,7 +51,7 @@ from lighteval.models.model_output import (
     LoglikelihoodResponse,
     LoglikelihoodSingleTokenResponse,
 )
-from lighteval.models.utils import ModelConfig, _get_dtype, _get_model_sha, _simplify_name
+from lighteval.models.utils import ModelConfig, _get_dtype, _get_model_sha, _simplify_name, batched
 from lighteval.tasks.requests import (
     GreedyUntilMultiTurnRequest,
     GreedyUntilRequest,
@@ -507,8 +507,160 @@ class TransformersModel(LightevalModel):
         self,
         requests: list[GreedyUntilMultiTurnRequest],
     ) -> GenerativeMultiturnResponse:
-        raise NotImplementedError("This method is not implemented for this model")
+        for request in requests:
+            request.stop_sequence = as_list(request.stop_sequence) + [self.tokenizer.eos_token]
+            request.tokenized_context = self.tok_encode(request.context)["input_ids"]
 
+        results = []
+
+        dataset = GenerativeTaskDataset(requests=requests, num_dataset_splits=1)
+        dataloader = DataLoader(dataset, batch_size=1, collate_fn=lambda batch: batch)
+
+        if self.accelerator:
+            dataloader = self.accelerator.prepare(dataloader)
+
+        logger.warning("Running greedy multi turn generation, the batch size is set to 1 for this task.")
+
+        for request_batch in tqdm(
+            dataloader, desc="Greedy Multi Turn generation", position=1, leave=False, disable=self.disable_tqdm
+        ):
+            request = request_batch[0]
+            # For chat models, generation stops with EOS token, so we don't need to specify stop tokens
+            if self.use_chat_template:
+                stop_tokens = []
+            else:
+                stop_tokens = request.stop_sequence
+            max_generated_tokens = request.generation_size
+            context = request.context[0]
+            max_context_size_allowed = self.max_length - max_generated_tokens
+
+            model_inputs = self.tokenizer(
+                context,
+                padding=True,
+                truncation=True,
+                return_tensors="pt",
+                max_length=max_context_size_allowed,
+                add_special_tokens=self.add_special_tokens,
+            ).to(self.device)
+
+            stopping_criteria = transformers.StoppingCriteriaList(
+                [
+                    *[
+                        MultiTokenEOSCriteria(
+                            sequence, self.tokenizer, input_ids_shape=model_inputs["input_ids"].shape
+                        )
+                        for sequence in stop_tokens
+                    ],
+                ]
+            )
+
+            generation_config = self.generation_config_dict.copy()
+            generation_config.update(
+                {
+                    "max_new_tokens": max_generated_tokens,
+                    "pad_token_id": self.tokenizer.pad_token_id
+                    if self.tokenizer.pad_token_id
+                    else self.tokenizer.eos_token_id,
+                    "eos_token_id": self.tokenizer.eos_token_id,
+                    "do_sample": False,
+                }
+            )
+
+            model_outputs: GenerateOutput = self.model.generate(
+                **model_inputs, stopping_criteria=stopping_criteria, **generation_config
+            )
+            model_outputs = model_outputs.sequences[0, model_inputs["input_ids"].size(1) :]
+
+            # We manage stop tokens in an extra step in case they were incorrectly detected earlier
+            # (which can happen for multitoken stop sequences)
+            decoded_generation = self.tokenizer.decode(model_outputs)  # should we skip_special_tokens=True here?
+            for term in stop_tokens:
+                decoded_generation = decoded_generation.split(term)[0]
+            model_generations = [model_outputs]
+
+            input_tokens = [model_inputs["input_ids"]]
+
+            for i, multi_turn_context in enumerate(request.context[1:]):
+                multi_turn_context = multi_turn_context.format(model_response=decoded_generation)
+
+                model_inputs = self.tokenizer(
+                    multi_turn_context,
+                    padding=True,
+                    truncation=True,
+                    return_tensors="pt",
+                    max_length=max_context_size_allowed,
+                    add_special_tokens=self.add_special_tokens,
+                ).to(self.device)
+
+                stopping_criteria = transformers.StoppingCriteriaList(
+                    [
+                        *[
+                            MultiTokenEOSCriteria(
+                                sequence, self.tokenizer, input_ids_shape=model_inputs["input_ids"].shape
+                            )
+                            for sequence in stop_tokens
+                        ],
+                    ]
+                )
+
+                generation_config = self.generation_config_dict.copy()
+                generation_config.update(
+                    {
+                        "max_new_tokens": max_generated_tokens,
+                        "pad_token_id": self.tokenizer.pad_token_id
+                        if self.tokenizer.pad_token_id
+                        else self.tokenizer.eos_token_id,
+                        "eos_token_id": self.tokenizer.eos_token_id,
+                        "do_sample": True,
+                        "temperature": 0.8, # control the randomness of the predicted tokens
+                        "repetition_penalty": 1.1, # prevents the repetition of previous tokens through a penalty
+                        "top_k": 40, # The number of highest probability vocabulary tokens to keep for top-k-filtering
+                        "top_p": 0.9, # If set to < 1, only the smallest set of most probable tokens with probabilities that add up to top_p or higher are kept for generation
+                    }
+                )
+
+                model_outputs: GenerateOutput = self.model.generate(
+                    input_ids=model_inputs["input_ids"],
+                    attention_mask=model_inputs["attention_mask"],
+                    stopping_criteria=stopping_criteria,
+                    **generation_config,
+                )
+                model_outputs = model_outputs.sequences[0, model_inputs["input_ids"].size(1) :]
+                model_generations.append(model_outputs)
+                input_tokens.append(model_inputs["input_ids"])
+
+                decoded_generation = self.tokenizer.decode(model_outputs, skip_special_tokens=True)
+                for term in stop_tokens:
+                    decoded_generation = decoded_generation.split(term)[0]
+
+            if self.accelerator:
+                padding_size = max(gen.shape[0] for gen in model_generations)
+                for i, gen in enumerate(model_generations):
+                    model_generations[i] = F.pad(
+                        gen, (0, padding_size - gen.shape[0]), value=self.tokenizer.pad_token_id
+                    )
+                model_generations = torch.stack(model_generations, dim=0)
+                model_generations, lengths = self.pad_and_gather(model_generations, drop_last_samples=False)
+
+            model_answers = []
+            for generation, _ in zip(model_generations, lengths):
+                generation = generation.cpu().tolist()
+                decoded = self.tokenizer.decode(generation, skip_special_tokens=True)
+                model_answers.append(decoded)
+
+            for answers in batched(model_answers, len(request.context)):
+                results.append(
+                    GenerativeMultiturnResponse(
+                        result=answers,
+                        input_tokens=input_tokens,
+                        generated_tokens=[],
+                        truncated_tokens_count=0,
+                        padded_tokens_count=0,
+                    )
+                )
+
+        return results
+    
     def greedy_until(
         self,
         requests: list[GreedyUntilRequest],
@@ -657,7 +809,7 @@ class TransformersModel(LightevalModel):
             renormalize_logits=True,
             # modified and added based on https://arxiv.org/pdf/2406.11477 & https://huggingface.co/docs/transformers/v4.45.2/en/internal/generation_utils
             do_sample=True,
-            num_beams=5,
+            num_beams=5, # number of beams for beam search, set to 1 for greedy decoding
             temperature=0.8, # control the randomness of the predicted tokens
             repetition_penalty=1.1, # prevents the repetition of previous tokens through a penalty
             top_k=40, # The number of highest probability vocabulary tokens to keep for top-k-filtering

@@ -153,6 +153,7 @@ class GreedyUntilMultiTurnRequest(Request):
     generation_size: int
     request_type = RequestType.GREEDY_UNTIL_MULTI_TURN
     use_logits: bool = False
+    do_sample: bool = False
     images: Optional[list["Image"]] = None
 
 
