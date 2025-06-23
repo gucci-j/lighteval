@@ -26,7 +26,9 @@ from contextlib import nullcontext
 
 import torch
 import transformers
+from transformers import AutoConfig, PretrainedConfig
 from transformers import AutoModelForCausalLM
+from peft import AutoPeftModelForCausalLM
 
 from lighteval.models.transformers.transformers_model import TransformersModel, TransformersModelConfig
 from lighteval.models.utils import _get_dtype
@@ -47,6 +49,20 @@ class AdapterModelConfig(TransformersModelConfig):
     def model_post_init(self, __context):
         if not is_peft_available():
             raise ImportError(NO_PEFT_ERROR_MSG)
+    
+    def get_transformers_config(self) -> PretrainedConfig:
+        revision = self.revision
+
+        if self.subfolder:
+            revision = f"{self.revision}/{self.subfolder}"
+
+        auto_config = AutoConfig.from_pretrained(
+            self.base_model,
+            revision=revision,
+            trust_remote_code=self.trust_remote_code,
+        )
+
+        return auto_config
 
 
 class AdapterModel(TransformersModel):
@@ -56,7 +72,7 @@ class AdapterModel(TransformersModel):
         model_parallel, max_memory, device_map = self.init_model_parallel(self.config.model_parallel)
         self.config.model_parallel = model_parallel
 
-        adapter_weights = self.config.pretrained
+        adapter_weights = self.config.model_name
         merged_path = f"{adapter_weights}-adapter-applied"
 
         if self.config.dtype == "4bit":
@@ -72,44 +88,55 @@ class AdapterModel(TransformersModel):
 
         if self.accelerator.is_local_main_process if self.accelerator is not None else nullcontext():
             logger.info(f"Loading model from {adapter_weights} and applying adapter to {self.config.base_model}")
-            base = AutoModelForCausalLM.from_pretrained(
-                self.config.base_model, torch_dtype=torch.float16, low_cpu_mem_usage=True
-            )
-            # resize model for adapters with added tokens
-            token_diff = len(self._tokenizer) - base.config.vocab_size
-            if token_diff != 0:
-                if token_diff > 0:
-                    logger.info(
-                        f"You're using the adapter model's tokenizer, which has more tokens than the base model. Adding {token_diff} token(s)."
-                    )
-                else:
-                    logger.info(
-                        f"You're using the adapter model's tokenizer, which has fewer tokens than the base model. Removing {abs(token_diff)} token(s)."
-                    )
-                base.resize_token_embeddings(len(self._tokenizer))
-            # Should pass revision
-            model = PeftModel.from_pretrained(base, adapter_weights)
-            model = model.merge_and_unload()
+            if self.config.base_model == self.config.model_name:
+                logger.warning(
+                    "The base model and the adapter model are the same."
+                )
+                # Load the "base" model (which is actually the adapter model) and apply the adapter weights
+                base = AutoModelForCausalLM.from_pretrained(
+                    self.config.base_model,
+                    torch_dtype=torch.bfloat16,
+                    max_memory=max_memory,
+                    device_map=device_map,
+                    trust_remote_code=self.config.trust_remote_code,
+                )
+                # Load the adapter weights again to make this into a PeftModel
+                base = PeftModel.from_pretrained(base, adapter_weights)
+                # Unload the adapter weights to get the base model without the adapter
+                base = base.base_model.unload()
+                # Load the adapter weights again to get the final model with the adapter applied and merged
+                base = PeftModel.from_pretrained(base, adapter_weights)
+                model = base.merge_and_unload()
 
-            logger.info("Saving model with adapter applied")
-            base.save_pretrained(merged_path)
-
-        logger.info(f"Loading model from {merged_path}")
-
-        model = AutoModelForCausalLM.from_pretrained(
-            merged_path,
-            max_memory=max_memory,
-            device_map=device_map,
-            torch_dtype=torch_dtype,
-            trust_remote_code=self.config.trust_remote_code,
-            quantization_config=quantization_config,
-        )
+            else:
+                base = AutoModelForCausalLM.from_pretrained(
+                    self.config.base_model, 
+                    torch_dtype=torch.bfloat16, 
+                    max_memory=max_memory,
+                    device_map=device_map,
+                    trust_remote_code=self.config.trust_remote_code,
+                )
+                # resize model for adapters with added tokens
+                token_diff = len(self._tokenizer) - base.config.vocab_size
+                if token_diff != 0:
+                    if token_diff > 0:
+                        logger.info(
+                            f"You're using the adapter model's tokenizer, which has more tokens than the base model. Adding {token_diff} token(s)."
+                        )
+                    else:
+                        logger.info(
+                            f"You're using the adapter model's tokenizer, which has fewer tokens than the base model. Removing {abs(token_diff)} token(s)."
+                        )
+                    base.resize_token_embeddings(len(self._tokenizer))
+                # Should pass revision
+                model = PeftModel.from_pretrained(base, adapter_weights)
+                model = model.merge_and_unload()
 
         return model
 
     def cleanup(self):
         try:
-            tmp_weights_dir = f"{self.model_name}-adapter-applied"
+            tmp_weights_dir = f"{self.config.model_name}-adapter-applied"
             shutil.rmtree(tmp_weights_dir)
             logger.info(f"Removed {tmp_weights_dir}")
         except OSError:
